@@ -60,7 +60,7 @@ exports.update = async (req, res) => {
   }
 };
 
-// @route PATCH api/upload
+// @route PATCH api/user/upload
 // @desc Upload profile image
 // @access Public
 exports.upload = async (req, res) => {
