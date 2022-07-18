@@ -1,3 +1,5 @@
+// Passport authentication strategy is created and configured here
+
 const JwtStrategy = require("passport-jwt").Strategy;
 const ExtractJwt = require("passport-jwt").ExtractJwt;
 

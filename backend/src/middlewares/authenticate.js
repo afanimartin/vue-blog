@@ -1,3 +1,5 @@
+// This middleware is used to authenticate the user's request
+
 const passport = require("passport");
 
 module.exports = (req, res, next) => {
