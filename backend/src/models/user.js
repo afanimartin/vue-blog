@@ -15,6 +15,11 @@ const UserSchema = new mongoose.Schema(
       required: "Your password is required",
       max: 100,
     },
+    role: {
+      type: String,
+      default: "user",
+      required: false,
+    },
     username: {
       type: String,
       unique: true,
@@ -70,6 +75,7 @@ UserSchema.methods.generateJWT = () => {
   let payload = {
     id: this._id,
     email: this.email,
+    role: this.role,
     username: this.username,
   };
 

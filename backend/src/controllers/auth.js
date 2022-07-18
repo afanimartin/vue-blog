@@ -4,29 +4,28 @@ const User = require("../models/user");
 // @desc Register user and return JWT
 // @access Public
 
-exports.register = (req, res) => {
-  // Check if user exists
-  User.findOne({ email: req.body.email, username: req.body.username })
-    .then((user) => {
-      if (user)
-        return res.status(401).json({
-          message:
-            "The email/username entered is associated with another account.",
-        });
+exports.register = async (req, res) => {
+  try {
+    const email = req.body.email;
+    const userToSave = req.body;
 
-      // Create and save user
-      const newUser = new User(req.body);
+    // Check if user exists
+    const user = await User.findOne(email);
 
-      newUser
-        .save()
-        .then((user) =>
-          res.status(200).json({ token: user.generateJWT(), user: user })
-        )
-        .catch((err) => res.status(500).json({ message: err.message }));
-    })
-    .catch((err) =>
-      res.status(500).json({ success: false, message: err.message })
-    );
+    if (user)
+      return res.status(401).json({
+        message:
+          "The email/username entered is associated with another account.",
+      });
+
+    // Create and save user
+    const newUser = new User(userToSave);
+    newUser.save();
+
+    return res.status(201).json({ token: user.generateJWT(), user: user });
+  } catch (error) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 // @route api/auth/login
