@@ -9,22 +9,23 @@ exports.register = async (req, res) => {
     const email = req.body.email;
     const userToSave = req.body;
 
-    // Check if user exists
-    const user = await User.findOne(email);
+    // check if user exists
+    const user = await User.findOne({ email });
 
     if (user)
       return res.status(401).json({
-        message:
-          "The email/username entered is associated with another account.",
+        message: "The email entered is associated with another account.",
       });
 
-    // Create and save user
+    // create and save user
     const newUser = new User(userToSave);
     newUser.save();
 
-    return res.status(201).json({ token: user.generateJWT(), user: user });
+    return res
+      .status(201)
+      .json({ token: newUser.generateJWT(), user: newUser });
   } catch (error) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -33,8 +34,7 @@ exports.register = async (req, res) => {
 // @access Public
 
 exports.login = (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
+  const { email, password } = req.body;
 
   User.findOne({ email: email })
     .then((user) => {
@@ -47,11 +47,11 @@ exports.login = (req, res) => {
         });
 
       // Validate password
-      if (!user.comparePassword())
+      if (!user.comparePassword(password))
         return res.status(401).json({ message: "Invalid password." });
 
       // Send token with user object
       return res.status(200).json({ token: user.generateJWT(), user: user });
     })
-    .catch((err) => res.status(500).json({ message: err.message }));
+    .catch((error) => res.status(500).json({ message: error.message }));
 };

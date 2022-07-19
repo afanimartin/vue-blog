@@ -1,11 +1,23 @@
 const User = require("../models/user");
 
-const { uploader } = require("../utils/index");
+const { uploader, validateId } = require("../utils/index");
 
-// @route GET api/user
-// @desc Returns all users
-// @access Public
+// @route GET /
+// @desc Show welcome message
+// @access Private
 exports.index = async (req, res) => {
+  const loggedInUser = req.user;
+
+  if (loggedInUser._id.toString() === undefined)
+    return res
+      .status(401)
+      .json({ message: "Must be logged in to see list of users." });
+
+  if (loggedInUser.role !== "admin")
+    return res
+      .status(401)
+      .json({ message: "You do not have permission to see list of users." });
+
   const users = await User.find({});
   res.status(200).json({ users });
 };
@@ -13,19 +25,25 @@ exports.index = async (req, res) => {
 // @route GET api/user/{id}
 // @desc Return existing user
 // @access Public
-exports.show = async (req, res) => {
+exports.show = async function (req, res) {
   try {
     const id = req.params.id;
 
-    const user = await User.findById(id);
+    if (validateId(id)) {
+      const user = await User.findById(id);
 
-    if (!user) {
-      res
-        .status(404)
-        .json({ message: "User with ID " + id + " does not exist." });
+      if (!user) {
+        return res
+          .status(401)
+          .json({ message: "User with ID " + id + " does not exist." });
+      }
+
+      return res.status(200).json({ user: user });
     }
 
-    res.status(200).json({ user: user });
+    return res
+      .status(401)
+      .json({ message: "The user ID " + id + " is invalid." });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -54,7 +72,9 @@ exports.update = async (req, res) => {
 
     // If there is no image, return success
     if (!req.file)
-      return res.status(200).json({ message: "User updated successfully" });
+      return res
+        .status(200)
+        .json({ message: "User updated successfully", user: user });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -105,7 +125,7 @@ exports.delete = async (req, res) => {
     if (user.role !== "admin")
       return res
         .status(401)
-        .json({ message: "You only admins can delete users." });
+        .json({ message: "You do not have permission to delete users." });
 
     await User.deleteOne(id);
   } catch (error) {

@@ -22,7 +22,6 @@ const UserSchema = new mongoose.Schema(
     },
     username: {
       type: String,
-      unique: true,
       required: "Your username is required",
       max: 100,
     },
@@ -40,7 +39,9 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-UserSchema.pre("save", (next) => {
+// Do not use arrow function because it changes the scope of `this`
+// leading to this error: UnhandledPromiseRejectionWarning: TypeError: user.isModified is not a function
+UserSchema.pre("save", function (next) {
   const user = this;
 
   // If user's password is not changed, move on
@@ -51,7 +52,7 @@ UserSchema.pre("save", (next) => {
   bcrypt.genSalt((err, salt) => {
     if (err) return next(err);
 
-    bcrypt.hash(user.password, salt, (err, hash) => {
+    bcrypt.hash(user.password, salt, function (err, hash) {
       if (err) return next(err);
 
       user.password = hash;
@@ -62,12 +63,12 @@ UserSchema.pre("save", (next) => {
 
 // Compare password from db and user input
 // If both match, login user
-UserSchema.methods.comparePassword = (password) => {
+UserSchema.methods.comparePassword = function (password) {
   return bcrypt.compareSync(password, this.password);
 };
 
 // Return the user object with token upon successful login/signup
-UserSchema.methods.generateJWT = () => {
+UserSchema.methods.generateJWT = function () {
   const today = new Date();
   const expirationDate = new Date(today);
   expirationDate.setDate(today.getDate() + 60);
@@ -84,5 +85,5 @@ UserSchema.methods.generateJWT = () => {
   });
 };
 
-mongoose.set("useFindAndModify", false);
+// mongoose.set("useFindAndModify", false);
 module.exports = mongoose.model("Users", UserSchema);
