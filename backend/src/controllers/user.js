@@ -1,6 +1,6 @@
 const User = require("../models/user");
 
-const { uploader, validateId } = require("../utils/index");
+const { uploader, validId } = require("../utils/index");
 
 // @route GET /
 // @desc Show welcome message
@@ -29,7 +29,7 @@ exports.show = async function (req, res) {
   try {
     const id = req.params.id;
 
-    if (validateId(id)) {
+    if (validId(id)) {
       const user = await User.findById(id);
 
       if (!user) {
@@ -64,50 +64,66 @@ exports.update = async (req, res) => {
         message: "You do not have the permission to update this profile.",
       });
 
-    const user = await User.findByIdAndUpdate(
-      id,
-      { $set: dataToUpdate },
-      { new: true }
-    );
+    if (validId(id)) {
+      const user = await User.findByIdAndUpdate(
+        id,
+        { $set: dataToUpdate },
+        { new: true }
+      );
 
-    // If there is no image, return success
-    if (!req.file)
-      return res
-        .status(200)
-        .json({ message: "User updated successfully", user: user });
+      // If there is no image, return success
+      if (!req.file)
+        return res
+          .status(200)
+          .json({ message: "User updated successfully", user: user });
+
+      // If there's image, attempt to upload to Cloudinary
+      const result = await uploader(req);
+      const _user = await User.findByIdAndUpdate(
+        id,
+        { $set: { profileImage: result.url } },
+        { new: true }
+      );
+
+      // If there is no image, return success
+      if (!req.file)
+        return res
+          .status(200)
+          .json({ message: "User updated successfully", user: _user });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @route PATCH api/user/upload
-// @desc Upload profile image
-// @access Public
-exports.upload = async (req, res) => {
-  try {
-    const id = req.params.id;
-    const loggedInUserId = req.user._id;
-    const file = req.file;
+// // @route PATCH api/user/upload
+// // @desc Upload profile image
+// // @access Public
+// exports.upload = async (req, res) => {
+//   try {
+//     const id = req.params.id;
+//     const loggedInUser = req.user;
+//     const file = req.file;
 
-    if (id.toString() !== loggedInUser.toString())
-      return res.status(401).json({
-        message: "You do not have the permission to update this profile.",
-      });
+//     if (id.toString() !== loggedInUser._id.toString())
+//       return res.status(401).json({
+//         message: "You do not have the permission to update this profile.",
+//       });
 
-    // Upload profile image to Cloudinary
-    const result = await uploader(file);
+//     // Upload profile image to Cloudinary
+//     const result = await uploader(file);
 
-    await User.findByIdAndUpdate(
-      id,
-      { $set: { profileImage: result.url } },
-      { new: true }
-    );
+//     await User.findByIdAndUpdate(
+//       id,
+//       { $set: { profileImage: result.url } },
+//       { new: true }
+//     );
 
-    res.status(200).json({ message: "Profile image uploaded successfully." });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+//     res.status(200).json({ message: "Profile image uploaded successfully." });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 
 // @route api/user/{id}
 // @desc Delete existing user
